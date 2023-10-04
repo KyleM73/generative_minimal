@@ -1,12 +1,13 @@
 import torch
 import torchvision
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
+if DEVICE == "cuda": torch.backends.cudnn.benchmark = True
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from generative_minimal.models import VAE
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
 
 def imshow(img):
     img = img / 2 + 0.5 # unnormalize
@@ -37,19 +38,15 @@ if __name__ == "__main__":
         torchvision.transforms.Normalize((0.5), (0.5)), # from [0,1] to [-1,1]
         ]) 
     trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform) #60k
-    trainset.data.to(DEVICE)
-    trainset.target.to(DEVICE)
     testset = torchvision.datasets.MNIST(root="./data", train=False, download=False, transform=transform) #10k
-    testset.data.to(DEVICE)
-    testset.target.to(DEVICE)
     classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
     in_channels = 1
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                            shuffle=True, num_workers=2)
+                                            shuffle=True, num_workers=2, pin_memory=True)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                            shuffle=False, num_workers=2)
+                                            shuffle=False, num_workers=2, pin_memory=True)
     
     # define network
     net = VAE(in_size=28, in_channels=in_channels, latent_dim=latent_dim).to(DEVICE)
@@ -64,8 +61,9 @@ if __name__ == "__main__":
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(trainloader, start=0):
             inputs, labels = data
-            optimizer.zero_grad()
-            generated, src, mu, logvar = net(inputs)
+            for param in net.parameters():
+                param.grad = None
+            generated, src, mu, logvar = net(inputs.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(trainloader))
             loss_dict["loss"].backward()
             optimizer.step()
@@ -86,7 +84,7 @@ if __name__ == "__main__":
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(testloader, start=0):
             inputs, labels = data
-            generated, src, mu, logvar = net(inputs)
+            generated, src, mu, logvar = net(inputs.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(testloader))
 
             running_loss += loss_dict["loss"].detach()

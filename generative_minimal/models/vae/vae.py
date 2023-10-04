@@ -22,7 +22,7 @@ class VAE(torch.nn.Module):
         for h_dim in hidden_dims:
             encoder_layers.append(
                 torch.nn.Sequential(
-                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=1, padding=1),
+                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=1, padding=1, bias=False),
                     torch.nn.BatchNorm2d(h_dim),
                     self.activation_func()
                 )
@@ -50,7 +50,7 @@ class VAE(torch.nn.Module):
         for i in range(len(hidden_dims)-1):
             decoder_layers.append(
                 torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, stride=1, padding=1),
+                    torch.nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, stride=1, padding=1, bias=False),
                     torch.nn.BatchNorm2d(hidden_dims[i+1]),
                     self.activation_func()
                 )
