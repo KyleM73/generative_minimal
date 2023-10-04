@@ -92,5 +92,5 @@ if __name__ == "__main__":
         )
         print()
     
-    imgs = net.sample(batch_size=64)
-    imshow(torchvision.utils.make_grid(imgs.cpu()))
+    imgs = net.cpu().sample(batch_size=64)
+    imshow(torchvision.utils.make_grid(imgs))
