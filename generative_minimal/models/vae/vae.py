@@ -103,7 +103,7 @@ class VAE(torch.nn.Module):
         reconstruction_loss = torch.nn.functional.mse_loss(input, output)
         kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
         loss = reconstruction_loss + kld_weight * kld_loss
-        return {"loss" : loss, "reconstruction" : reconstruction_loss.detach(), "kld" : -kld_loss.detach()}
+        return {"loss" : loss, "reconstruction" : reconstruction_loss.detach(), "kld" : kld_loss.detach()}
 
     def get_encoder_size(self, in_size: int, hidden_dims: List[int], kernel: int, stride: int, padding: int) -> int:
         s = in_size

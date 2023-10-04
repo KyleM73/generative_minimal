@@ -19,28 +19,34 @@ def imshow(img):
 if __name__ == "__main__":
     # params
     batch_size = 1000
-    latent_dim = 8
-    epochs = 10
 
     # CIFAR10
-    #transform = torchvision.transforms.Compose([
-    #    torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
-    #    torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), # from [0,1] to [-1,1]
-    #    ]) 
-    #trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True)
-    #testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True)
-    #classes = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
-    #in_channels = 3
+    """
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
+        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), # from [0,1] to [-1,1]
+        ]) 
+    trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=False, transform=transform) # 50k
+    testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=False, transform=transform) # 10k
+    classes = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
+    in_channels = 3
+    in_size = 32
+    latent_dim = 8
+    epochs = 10
+    """
 
     # MNIST
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
         torchvision.transforms.Normalize((0.5), (0.5)), # from [0,1] to [-1,1]
         ]) 
-    trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform) #60k
-    testset = torchvision.datasets.MNIST(root="./data", train=False, download=False, transform=transform) #10k
+    trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform) # 60k
+    testset = torchvision.datasets.MNIST(root="./data", train=False, download=False, transform=transform) # 10k
     classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
     in_channels = 1
+    in_size = 28
+    latent_dim = 16
+    epochs = 20
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -48,8 +54,11 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                             shuffle=False, num_workers=2, pin_memory=True)
     
+    kld_weight_train = 1/len(trainloader)
+    kld_weight_test = 1/len(testloader)
+    
     # define network
-    net = VAE(in_size=28, in_channels=in_channels, latent_dim=latent_dim).to(DEVICE)
+    net = VAE(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim).to(DEVICE)
     optimizer = torch.optim.Adam(net.parameters(), lr=3e-4)
 
     print(net)
@@ -64,7 +73,7 @@ if __name__ == "__main__":
             for param in net.parameters():
                 param.grad = None
             generated, src, mu, logvar = net(inputs.to(DEVICE))
-            loss_dict = net.loss(src, generated, mu, logvar, 1/len(trainloader))
+            loss_dict = net.loss(src, generated, mu, logvar, kld_weight_train)
             loss_dict["loss"].backward()
             optimizer.step()
 
@@ -85,7 +94,7 @@ if __name__ == "__main__":
         for i, data in enumerate(testloader, start=0):
             inputs, _ = data
             generated, src, mu, logvar = net(inputs.to(DEVICE))
-            loss_dict = net.loss(src, generated, mu, logvar, 1/len(testloader))
+            loss_dict = net.loss(src, generated, mu, logvar, kld_weight_test)
 
             running_loss += loss_dict["loss"].detach()
             running_recons += loss_dict["reconstruction"]
