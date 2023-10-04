@@ -37,7 +37,11 @@ if __name__ == "__main__":
         torchvision.transforms.Normalize((0.5), (0.5)), # from [0,1] to [-1,1]
         ]) 
     trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform) #60k
+    trainset.data.to(DEVICE)
+    trainset.target.to(DEVICE)
     testset = torchvision.datasets.MNIST(root="./data", train=False, download=False, transform=transform) #10k
+    testset.data.to(DEVICE)
+    testset.target.to(DEVICE)
     classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
     in_channels = 1
 
@@ -61,7 +65,7 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, start=0):
             inputs, labels = data
             optimizer.zero_grad()
-            generated, src, mu, logvar = net(inputs.to(DEVICE))
+            generated, src, mu, logvar = net(inputs)
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(trainloader))
             loss_dict["loss"].backward()
             optimizer.step()
@@ -82,7 +86,7 @@ if __name__ == "__main__":
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(testloader, start=0):
             inputs, labels = data
-            generated, src, mu, logvar = net(inputs.to(DEVICE))
+            generated, src, mu, logvar = net(inputs)
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(testloader))
 
             running_loss += loss_dict["loss"].detach()
