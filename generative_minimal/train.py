@@ -1,8 +1,6 @@
 import torch
 import torchvision
 
-import gc
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True
 
@@ -73,10 +71,6 @@ if __name__ == "__main__":
             running_loss += loss_dict["loss"].detach()
             running_recons += loss_dict["reconstruction"]
             running_kld += loss_dict["kld"]
-
-            del inputs
-            gc.collect()
-            torch.cuda.empty_cache()
 
             print(
                 "[{epoch}, {batch}] loss: {loss} reconstruction loss: {recons} kld loss: {kld}"

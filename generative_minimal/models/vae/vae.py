@@ -15,7 +15,7 @@ class VAE(torch.nn.Module):
         self.latent_dim = latent_dim
         self.activation_func = activation_func
         if hidden_dims is None:
-            hidden_dims = [32, 64, 128, 256]
+            hidden_dims = [32, 64, 128]
         
         # encoder
         encoder_layers = []
