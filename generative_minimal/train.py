@@ -73,7 +73,7 @@ if __name__ == "__main__":
             one_hot_labels = torch.nn.functional.one_hot(labels)
             for param in net.parameters():
                 param.grad = None
-            generated, src, mu, logvar = net(inputs.to(DEVICE), labels=one_hot_labels.to(DEVICE))
+            generated, src, mu, logvar = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, kld_weight_train)
             loss_dict["loss"].backward()
             optimizer.step()
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         for i, data in enumerate(testloader, start=0):
             inputs, labels = data
             one_hot_labels = torch.nn.functional.one_hot(labels)
-            generated, src, mu, logvar = net(inputs.to(DEVICE), labels=one_hot_labels.to(DEVICE))
+            generated, src, mu, logvar = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, kld_weight_test)
 
             running_loss += loss_dict["loss"].detach()
