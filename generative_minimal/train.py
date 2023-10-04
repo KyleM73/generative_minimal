@@ -38,7 +38,7 @@ if __name__ == "__main__":
                                             shuffle=False, num_workers=2)
     
     # define network
-    net = VAE(in_size=28, in_channels=in_channels, latent_dim=latent_dim)
+    net = VAE(in_size=28, in_channels=in_channels, latent_dim=latent_dim).to(DEVICE)
     optimizer = torch.optim.Adam(net.parameters(), lr=3e-4)
 
     print(net)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, start=0):
             inputs, labels = data
             optimizer.zero_grad()
-            generated, src, mu, logvar = net(inputs)
+            generated, src, mu, logvar = net(inputs.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(trainloader))
             loss_dict["loss"].backward()
             optimizer.step()
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(testloader, start=0):
             inputs, labels = data
-            generated, src, mu, logvar = net(inputs)
+            generated, src, mu, logvar = net(inputs.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(testloader))
 
             running_loss += loss_dict["loss"].detach()
