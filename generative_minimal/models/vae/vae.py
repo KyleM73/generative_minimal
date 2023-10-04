@@ -87,17 +87,17 @@ class VAE(torch.nn.Module):
         eps = torch.randn_like(std)
         return mu + std * eps
 
-    def forward(self, input: torch.Tensor):
+    def forward(self, input: torch.Tensor, **kwargs):
         mu, logvar = self.encode(input)
         z = self.reparameterize(mu, logvar)
         return [self.decode(z), input, mu, logvar]
     
-    def sample(self, batch_size) -> torch.Tensor:
+    def sample(self, batch_size, **kwargs) -> torch.Tensor:
         z = torch.randn(batch_size, self.latent_dim)
         return self.decode(z)
 
-    def generate(self, input: torch.Tensor) -> torch.Tensor:
-        return self.forward(input)[0]
+    def generate(self, input: torch.Tensor, **kwargs) -> torch.Tensor:
+        return self.forward(input, **kwargs)[0]
 
     def loss(self, input: torch.Tensor, output: torch.Tensor, mu: torch.Tensor, logvar: torch.Tensor, kld_weight: float) -> dict:
         reconstruction_loss = torch.nn.functional.mse_loss(input, output)

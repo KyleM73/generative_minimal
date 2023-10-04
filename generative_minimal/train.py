@@ -7,7 +7,7 @@ if DEVICE == "cuda": torch.backends.cudnn.benchmark = True
 import matplotlib.pyplot as plt
 import numpy as np
 
-from generative_minimal.models import VAE
+from generative_minimal.models import VAE, CVAE
 
 def imshow(img):
     img = img / 2 + 0.5 # unnormalize
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     kld_weight_test = 1/len(testloader)
     
     # define network
-    net = VAE(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim).to(DEVICE)
+    net = CVAE(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=len(classes)).to(DEVICE)
     optimizer = torch.optim.Adam(net.parameters(), lr=3e-4)
 
     print(net)
@@ -69,10 +69,11 @@ if __name__ == "__main__":
         net.train()
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(trainloader, start=0):
-            inputs, _ = data
+            inputs, labels = data
+            one_hot_labels = torch.nn.functional.one_hot(labels)
             for param in net.parameters():
                 param.grad = None
-            generated, src, mu, logvar = net(inputs.to(DEVICE))
+            generated, src, mu, logvar = net(inputs.to(DEVICE), labels=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, kld_weight_train)
             loss_dict["loss"].backward()
             optimizer.step()
@@ -92,8 +93,9 @@ if __name__ == "__main__":
         net.eval()
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(testloader, start=0):
-            inputs, _ = data
-            generated, src, mu, logvar = net(inputs.to(DEVICE))
+            inputs, labels = data
+            one_hot_labels = torch.nn.functional.one_hot(labels)
+            generated, src, mu, logvar = net(inputs.to(DEVICE), labels=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, kld_weight_test)
 
             running_loss += loss_dict["loss"].detach()
