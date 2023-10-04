@@ -1,6 +1,8 @@
 import torch
 import torchvision
 
+import gc
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True
 
@@ -60,7 +62,7 @@ if __name__ == "__main__":
         net.train()
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(trainloader, start=0):
-            inputs, labels = data
+            inputs, _ = data
             for param in net.parameters():
                 param.grad = None
             generated, src, mu, logvar = net(inputs.to(DEVICE))
@@ -71,6 +73,10 @@ if __name__ == "__main__":
             running_loss += loss_dict["loss"].detach()
             running_recons += loss_dict["reconstruction"]
             running_kld += loss_dict["kld"]
+
+            del inputs
+            gc.collect()
+            torch.cuda.empty_cache()
 
             print(
                 "[{epoch}, {batch}] loss: {loss} reconstruction loss: {recons} kld loss: {kld}"
@@ -83,7 +89,7 @@ if __name__ == "__main__":
         net.eval()
         running_loss, running_recons, running_kld = 0, 0, 0
         for i, data in enumerate(testloader, start=0):
-            inputs, labels = data
+            inputs, _ = data
             generated, src, mu, logvar = net(inputs.to(DEVICE))
             loss_dict = net.loss(src, generated, mu, logvar, 1/len(testloader))
 
