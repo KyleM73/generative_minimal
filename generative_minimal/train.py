@@ -1,9 +1,17 @@
 import torch
 import torchvision
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from generative_minimal.models import VAE
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
+
+def imshow(img):
+    img = img / 2 + 0.5 # unnormalize
+    plt.imshow(np.transpose(img.numpy(), (1,2,0)))
+    plt.imshow() 
 
 if __name__ == "__main__":
     # params
@@ -83,3 +91,6 @@ if __name__ == "__main__":
             .format(epoch=epoch,loss=running_loss/(i+1),recons=running_recons/(i+1),kld=running_kld/(i+1))
         )
         print()
+    
+    imgs = net.sample(batch_size=64)
+    imshow(torchvision.utils.make_grid(imgs.cpu()))

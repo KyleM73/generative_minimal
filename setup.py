@@ -8,5 +8,7 @@ setup(
       install_requires=[
           "torch",
           "torchvision",
+          "numpy",
+          "matplotlib",
       ]
 )
