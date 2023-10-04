@@ -71,7 +71,7 @@ class VAE(torch.nn.Module):
     def init_weights(self, l: Any) -> None:
         if isinstance(l, torch.nn.Linear) or isinstance(l, torch.nn.Conv2d):
             torch.nn.init.xavier_normal_(l.weight)
-            l.bias.data.fill_(0.01)
+            if isinstance(l, torch.nn.Linear): l.bias.data.fill_(0.01)
 
     def encode(self, input: torch.Tensor) -> List[torch.Tensor]:
         latent = self.encoder(input)
