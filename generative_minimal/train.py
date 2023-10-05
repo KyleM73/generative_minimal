@@ -46,7 +46,7 @@ if __name__ == "__main__":
     in_channels = 1
     in_size = 28
     latent_dim = 16
-    epochs = 20
+    epochs = 10
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -107,6 +107,6 @@ if __name__ == "__main__":
         )
         print()
 
-    labels = torch.tensor([[i for _ in range(len(classes))] for i in range(len(classes))])
-    imgs = net.cpu().sample(batch_size=64, context=torch.nn.functional.one_hot(labels))
-    imshow(torchvision.utils.make_grid(imgs))
+    labels = torch.tensor([[i for _ in range(len(classes))] for i in range(len(classes))]).view(-1,1)
+    imgs = net.cpu().sample(batch_size=100, context=torch.nn.functional.one_hot(labels))
+    imshow(torchvision.utils.make_grid(imgs, nrow=10))
