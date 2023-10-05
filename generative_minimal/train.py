@@ -107,6 +107,6 @@ if __name__ == "__main__":
         )
         print()
 
-    labels = torch.randint(0, len(classes), (64,))
+    labels = torch.tensor([[i for _ in range(len(classes))] for i in range(len(classes))])
     imgs = net.cpu().sample(batch_size=64, context=torch.nn.functional.one_hot(labels))
     imshow(torchvision.utils.make_grid(imgs))
