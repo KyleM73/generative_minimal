@@ -7,7 +7,8 @@ class VAE(torch.nn.Module):
                  in_channels: int, 
                  latent_dim: int, 
                  hidden_dims: List = None, 
-                 activation_func: Callable = torch.nn.GELU
+                 activation_func: Callable = torch.nn.GELU,
+                 **kwargs
                  ) -> None:
         super(VAE, self).__init__()
 

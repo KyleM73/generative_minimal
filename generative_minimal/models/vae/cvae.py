@@ -9,7 +9,8 @@ class CVAE(torch.nn.Module):
                  latent_dim: int,
                  context_dim: int, 
                  hidden_dims: List = None, 
-                 activation_func: Callable = torch.nn.GELU
+                 activation_func: Callable = torch.nn.GELU,
+                 **kwargs
                  ) -> None:
         super(CVAE, self).__init__()
 
