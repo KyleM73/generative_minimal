@@ -106,6 +106,7 @@ if __name__ == "__main__":
             .format(epoch=epoch,loss=running_loss/(i+1),recons=running_recons/(i+1),kld=running_kld/(i+1))
         )
         print()
-    
-    imgs = net.cpu().sample(batch_size=64, context=torch.randint(0, len(classes), (64,)))
+
+    labels = torch.randint(0, len(classes), (64,))
+    imgs = net.cpu().sample(batch_size=64, context=torch.nn.functional.one_hot(labels))
     imshow(torchvision.utils.make_grid(imgs))
