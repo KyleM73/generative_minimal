@@ -110,7 +110,7 @@ class CVAE(torch.nn.Module):
         return [self.decode(z_conditioned), input, mu, logvar]
     
     def sample(self, batch_size, **kwargs) -> torch.Tensor:
-        y = kwargs['labels'].float()
+        y = kwargs["context"].float()
         z = torch.randn(batch_size, self.latent_dim)
         z_conditioned = torch.cat((z, y), dim=1)
         return self.decode(z_conditioned)
