@@ -1,4 +1,5 @@
 from typing import Any, Callable, List
+
 import torch
 
 class VAE(torch.nn.Module):
@@ -83,12 +84,12 @@ class VAE(torch.nn.Module):
     def decode(self, input: torch.Tensor) -> torch.Tensor:
         return self.decoder(input)
     
-    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor):
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return mu + std * eps
 
-    def forward(self, input: torch.Tensor, **kwargs):
+    def forward(self, input: torch.Tensor, **kwargs) -> List[torch.Tensor]:
         mu, logvar = self.encode(input)
         z = self.reparameterize(mu, logvar)
         return [self.decode(z), input, mu, logvar]
