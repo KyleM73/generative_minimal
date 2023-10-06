@@ -10,7 +10,7 @@ class GAN(torch.nn.Module):
                  hidden_dims: List = None, 
                  activation_func: Callable = torch.nn.LeakyReLU,
                  label_smoothing: float = 0.0,
-                 label_noise: float = 0.1,
+                 label_noise: float = 0.01,
                  **kwargs
                  ) -> None:
         super(GAN, self).__init__()
@@ -28,7 +28,7 @@ class GAN(torch.nn.Module):
         generator_layers = self.make_block(self.latent_dim, hidden_dims[0], normalize=False)
         for i in range(len(hidden_dims)-1):
             generator_layers.extend(self.make_block(hidden_dims[i], hidden_dims[i+1]))
-        generator_layers.append(torch.nn.Linear(hidden_dims[-1], in_channels * in_size**2))
+        generator_layers.append(torch.nn.Linear(hidden_dims[-1], in_channels * in_size**2, device=self.device))
         generator_layers.append(torch.nn.Tanh())
         generator_layers.append(torch.nn.Unflatten(1, (in_channels, in_size, in_size)))
 
@@ -38,10 +38,10 @@ class GAN(torch.nn.Module):
         # discriminator
         hidden_dims.reverse()
         discriminator_layers = [torch.nn.Flatten()]
-        discriminator_layers.append(torch.nn.Linear(in_channels * in_size**2, hidden_dims[0]))
+        discriminator_layers.append(torch.nn.Linear(in_channels * in_size**2, hidden_dims[0], device=self.device))
         for i in range(len(hidden_dims)-1):
             discriminator_layers.extend(self.make_block(hidden_dims[i], hidden_dims[i+1]))
-        discriminator_layers.append(torch.nn.Linear(hidden_dims[-1], 1))
+        discriminator_layers.append(torch.nn.Linear(hidden_dims[-1], 1, device=self.device))
         discriminator_layers.append(torch.nn.Sigmoid())
 
         self.discriminator = torch.nn.Sequential(*discriminator_layers)
@@ -53,9 +53,9 @@ class GAN(torch.nn.Module):
             if isinstance(l, torch.nn.Linear) and l.bias is not None: l.bias.data.fill_(0.01)
 
     def make_block(self, in_dim: int, out_dim: int, normalize: bool = True) -> List:
-        layers = [torch.nn.Linear(in_dim, out_dim, bias=not normalize)]
+        layers = [torch.nn.Linear(in_dim, out_dim, bias=not normalize, device=self.device)]
         if normalize:
-            layers.append(torch.nn.BatchNorm1d(out_dim))
+            layers.append(torch.nn.BatchNorm1d(out_dim, device=self.device))
         layers.append(self.activation_func())
         return layers
     

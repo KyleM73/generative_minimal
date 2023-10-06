@@ -19,15 +19,16 @@ class CVAE(torch.nn.Module):
         self.activation_func = activation_func
         if hidden_dims is None:
             hidden_dims = [32, 64, 128]
+        self.device = kwargs["device"]
         
         # encoder
         self.context_embedding = torch.nn.Sequential(
-            torch.nn.Linear(context_dim, in_size**2),
+            torch.nn.Linear(context_dim, in_size**2, device=self.device),
             torch.nn.Unflatten(-1, (1, in_size, in_size))
             )
         self.context_embedding.apply(self.init_weights)
 
-        self.input_embedding = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1)
+        self.input_embedding = torch.nn.Conv2d(in_channels, in_channels, kernel_size=1, device=self.device)
         self.input_embedding.apply(self.init_weights)
 
         in_channels += 1 # for context embedding
@@ -35,8 +36,8 @@ class CVAE(torch.nn.Module):
         for h_dim in hidden_dims:
             encoder_layers.append(
                 torch.nn.Sequential(
-                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                    torch.nn.BatchNorm2d(h_dim),
+                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=1, padding=1, bias=False, device=self.device),
+                    torch.nn.BatchNorm2d(h_dim, device=self.device),
                     self.activation_func()
                 )
             )
@@ -48,32 +49,32 @@ class CVAE(torch.nn.Module):
 
         self.enc_size = self.dec_size = self.get_encoder_size(in_size, hidden_dims, kernel=3, stride=1, padding=1)
 
-        self.mu = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, latent_dim)
+        self.mu = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, latent_dim, device=self.device)
         self.mu.apply(self.init_weights)
 
-        self.logvar = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, latent_dim)
+        self.logvar = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, latent_dim, device=self.device)
         self.logvar.apply(self.init_weights)
 
         # decoder
         hidden_dims.reverse()
         decoder_layers = [
-            torch.nn.Linear(latent_dim + context_dim, hidden_dims[0] * self.dec_size**2),
+            torch.nn.Linear(latent_dim + context_dim, hidden_dims[0] * self.dec_size**2, device=self.device),
             torch.nn.Unflatten(-1, (hidden_dims[0], self.dec_size, self.dec_size))
         ]
         for i in range(len(hidden_dims)-1):
             decoder_layers.append(
                 torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, stride=1, padding=1, bias=False),
-                    torch.nn.BatchNorm2d(hidden_dims[i+1]),
+                    torch.nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, stride=1, padding=1, bias=False, device=self.device),
+                    torch.nn.BatchNorm2d(hidden_dims[i+1], device=self.device),
                     self.activation_func()
                 )
             )
         decoder_layers.append(
             torch.nn.Sequential(
-                torch.nn.ConvTranspose2d(hidden_dims[-1], hidden_dims[-1], kernel_size=3, stride=1, padding=1),
-                torch.nn.BatchNorm2d(hidden_dims[-1]),
+                torch.nn.ConvTranspose2d(hidden_dims[-1], hidden_dims[-1], kernel_size=3, stride=1, padding=1, device=self.device),
+                torch.nn.BatchNorm2d(hidden_dims[-1], device=self.device),
                 self.activation_func(),
-                torch.nn.Conv2d(hidden_dims[-1], self.in_channels, kernel_size=3, stride=1, padding=1),
+                torch.nn.Conv2d(hidden_dims[-1], self.in_channels, kernel_size=3, stride=1, padding=1, device=self.device),
                 torch.nn.Tanh()
             )
         )
@@ -97,7 +98,7 @@ class CVAE(torch.nn.Module):
     
     def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
+        eps = torch.randn_like(std, device=self.device)
         return mu + std * eps
 
     def forward(self, input: torch.Tensor, **kwargs) -> List[torch.Tensor]:
@@ -112,7 +113,7 @@ class CVAE(torch.nn.Module):
     
     def sample(self, batch_size, **kwargs) -> torch.Tensor:
         y = kwargs["context"].float()
-        z = torch.randn(batch_size, self.latent_dim)
+        z = torch.randn(batch_size, self.latent_dim, device=self.device)
         z_conditioned = torch.cat((z, y), dim=1)
         return self.decode(z_conditioned)
 

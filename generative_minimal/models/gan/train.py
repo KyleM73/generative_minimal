@@ -3,36 +3,12 @@ import torchvision
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always slower
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True # enables cuDNN auto-tuner
-
-import matplotlib.pyplot as plt
-import numpy as np
+torch.manual_seed(0)
 
 from generative_minimal.models import GAN
-def imshow(img):
-    img = img / 2 + 0.5 # unnormalize
-    plt.imshow(np.transpose(img.numpy(), (1,2,0)))
-    plt.axis("off")
-    plt.tight_layout()
-    plt.show() 
+from generative_minimal.utils import imshow
 
 if __name__ == "__main__":
-    # CIFAR10
-    """
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
-        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), # from [0,1] to [-1,1]
-        ]) 
-    trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=False, transform=transform) # 50k
-    testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=False, transform=transform) # 10k
-    classes = ("plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck")
-    n_classes = len(classes)
-    in_channels = 3
-    in_size = 32
-    latent_dim = 128
-    epochs = 10
-    batch_size = 200
-    """
-
     # MNIST
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
@@ -45,7 +21,7 @@ if __name__ == "__main__":
     in_channels = 1
     in_size = 28
     latent_dim = 32
-    epochs = 10
+    epochs = 20
     batch_size = 200
 
     # make dataset
@@ -55,7 +31,7 @@ if __name__ == "__main__":
                                             shuffle=False, num_workers=2, pin_memory=True)
     
     # define network
-    net = GAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE).to(DEVICE)
+    net = GAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE)
     optimizer_G = torch.optim.Adam(net.generator.parameters(), lr=3e-4)
     optimizer_D = torch.optim.Adam(net.discriminator.parameters(), lr=3e-4)
 
@@ -67,11 +43,12 @@ if __name__ == "__main__":
         net.train()
         running_loss_G, running_loss_D = 0, 0
         for i, data in enumerate(trainloader, start=0):
+            data = [d.to(DEVICE) for d in data]
             inputs, labels = data
             one_hot_labels = torch.nn.functional.one_hot(labels)
             for param in net.parameters():
                 param.grad = None
-            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
+            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs, context=one_hot_labels)
             loss_dict = net.loss(predicted_labels_g, predicted_labels_d, predicted_labels_r)
             loss_dict["g_loss"].backward()
             optimizer_G.step()
@@ -98,9 +75,10 @@ if __name__ == "__main__":
         net.eval()
         running_loss_G, running_loss_D = 0, 0
         for i, data in enumerate(testloader, start=0):
+            data = [d.to(DEVICE) for d in data]
             inputs, labels = data
             one_hot_labels = torch.nn.functional.one_hot(labels)
-            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
+            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs, context=one_hot_labels)
             loss_dict = net.loss(predicted_labels_g, predicted_labels_d, predicted_labels_r)
 
             running_loss_G += loss_dict["g_loss"].detach()
@@ -112,6 +90,6 @@ if __name__ == "__main__":
         )
         print()
 
-    labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)]).view(-1)
-    imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels.to(DEVICE)))
+    labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)], device=DEVICE).view(-1)
+    imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels))
     imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
