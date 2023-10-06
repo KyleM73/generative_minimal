@@ -25,18 +25,18 @@ class DCGAN(torch.nn.Module):
         self.device = kwargs["device"]
 
         # generator
-        generator_layers = [torch.nn.Unflatten(1, (latent_dim, 1, 1))]
-        generator_layers.extend(self.make_deconv_block(self.latent_dim, hidden_dims[0]))
+        generator_layers = [torch.nn.Unflatten(1, (self.latent_dim, 1, 1))] #[1,1]
+        generator_layers.extend(self.make_deconv_block(self.latent_dim, hidden_dims[0])) #[3,3]
         for i in range(len(hidden_dims)-1):
-            generator_layers.extend(self.make_deconv_block(hidden_dims[i], hidden_dims[i+1]))
-        generator_layers.extend(self.make_deconv_block(hidden_dims[-1], in_channels, final=True))
+            generator_layers.extend(self.make_deconv_block(hidden_dims[i], hidden_dims[i+1])) #[7,7], [15,15]
+        generator_layers.extend(self.make_deconv_block(hidden_dims[-1], self.in_channels, final=True)) #[28,28]
 
         self.generator = torch.nn.Sequential(*generator_layers)
         self.generator.apply(self.init_weights)
 
         # discriminator
         hidden_dims.reverse()
-        discriminator_layers = [*self.make_conv_block(in_channels, hidden_dims[0])]
+        discriminator_layers = [*self.make_conv_block(self.in_channels, hidden_dims[0])]
         for i in range(len(hidden_dims)-1):
             discriminator_layers.extend(self.make_conv_block(hidden_dims[i], hidden_dims[i+1]))
         discriminator_layers.extend(self.make_conv_block(hidden_dims[-1], 1, final=True))
@@ -51,7 +51,9 @@ class DCGAN(torch.nn.Module):
             if isinstance(l, torch.nn.Linear) and l.bias is not None: l.bias.data.fill_(0.01)
 
     def make_conv_block(self, in_dim: int, out_dim: int, normalize: bool = True, final: bool = False) -> List:
-        layers = [torch.nn.Conv2d(in_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=not normalize, device=self.device)]
+        layers = [torch.nn.Conv2d(in_dim, out_dim, 
+                    kernel_size=3 if not final else 2, stride=2 if not final else 1,
+                    padding=0, bias=not normalize, device=self.device)]
         if not final: 
             if normalize:
                 layers.append(torch.nn.BatchNorm2d(out_dim, device=self.device))
@@ -61,7 +63,9 @@ class DCGAN(torch.nn.Module):
         return layers
     
     def make_deconv_block(self, in_dim: int, out_dim: int, normalize: bool = True, final: bool = False) -> List:
-        layers = [torch.nn.ConvTranspose2d(in_dim, out_dim, kernel_size=3, stride=1, padding=1, bias=not normalize, device=self.device)]
+        layers = [torch.nn.ConvTranspose2d(in_dim, out_dim, 
+                    kernel_size=3 if not final else 4, stride=2,
+                    padding=0 if not final else 2, bias=not normalize, device=self.device)]
         if not final: 
             if normalize:
                 layers.append(torch.nn.BatchNorm2d(out_dim, device=self.device))
