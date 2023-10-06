@@ -2,6 +2,8 @@ from typing import Any, Callable, List
 
 import torch
 
+from generative_minimal import utils
+
 class VAE(torch.nn.Module):
     def __init__(self, 
                  in_size: int, 
@@ -36,7 +38,7 @@ class VAE(torch.nn.Module):
         self.encoder = torch.nn.Sequential(*encoder_layers)
         self.encoder.apply(self.init_weights)
 
-        self.enc_size = self.dec_size = self.get_encoder_size(in_size, hidden_dims, kernel=3, stride=1, padding=1)
+        self.enc_size = self.dec_size = utils.get_encoder_size(in_size, hidden_dims, kernel=3, stride=1, padding=1)
 
         self.mu = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, latent_dim, device=self.device)
         self.mu.apply(self.init_weights)
@@ -107,9 +109,3 @@ class VAE(torch.nn.Module):
         kld_loss = torch.mean(-0.5 * torch.sum(1 + logvar - mu**2 - logvar.exp(), dim=1), dim=0)
         loss = reconstruction_loss + kld_weight * kld_loss
         return {"loss" : loss, "reconstruction" : reconstruction_loss.detach(), "kld" : kld_loss.detach()}
-
-    def get_encoder_size(self, in_size: int, hidden_dims: List[int], kernel: int, stride: int, padding: int) -> int:
-        s = in_size
-        for _ in hidden_dims:
-            s = (s-kernel+2*padding)//stride + 1
-        return s

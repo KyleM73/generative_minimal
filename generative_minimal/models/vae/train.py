@@ -6,7 +6,7 @@ if DEVICE == "cuda": torch.backends.cudnn.benchmark = True # enables cuDNN auto-
 torch.manual_seed(0)
 
 from generative_minimal.models import VAE, CVAE
-from generative_minimal.utils import imshow
+from generative_minimal import utils
 
 if __name__ == "__main__":
     # MNIST
@@ -92,4 +92,4 @@ if __name__ == "__main__":
 
     labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)], device=DEVICE).view(-1)
     imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels))
-    imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
+    utils.imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
