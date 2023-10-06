@@ -20,9 +20,9 @@ if __name__ == "__main__":
     n_classes = len(classes)
     in_channels = 1
     in_size = 28
-    latent_dim = 32
+    latent_dim = 128
     epochs = 20
-    batch_size = 200
+    batch_size = 1000
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
