@@ -9,7 +9,7 @@ class GAN(torch.nn.Module):
                  latent_dim: int, 
                  hidden_dims: List = None, 
                  activation_func: Callable = torch.nn.LeakyReLU,
-                 label_smoothing: float = 0.1,
+                 label_smoothing: float = 0.0,
                  label_noise: float = 0.1,
                  **kwargs
                  ) -> None:
@@ -22,6 +22,7 @@ class GAN(torch.nn.Module):
             hidden_dims = [128, 256, 512]
         self.label_smoothing = label_smoothing
         self.label_noise = label_noise
+        self.device = kwargs["device"]
 
         # generator
         generator_layers = self.make_block(self.latent_dim, hidden_dims[0], normalize=False)
@@ -65,8 +66,8 @@ class GAN(torch.nn.Module):
         predicted_labels_r = self.discriminator(input)
         return [generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r]
     
-    def sample(self, batch_size, **kwargs) -> torch.Tensor:
-        z = torch.randn(batch_size, self.latent_dim)
+    def sample(self, batch_size: int, **kwargs) -> torch.Tensor:
+        z = torch.randn(batch_size, self.latent_dim, device=self.device)
         return self.generate(z)
 
     def generate(self, input: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -75,18 +76,18 @@ class GAN(torch.nn.Module):
     def loss(self, predicted_labels_g: torch.Tensor, predicted_labels_d: torch.Tensor, predicted_labels_r: torch.Tensor) -> dict:
         generator_loss = torch.nn.functional.binary_cross_entropy(
             predicted_labels_g,
-            torch.abs(self.label_smoothing * torch.randn(predicted_labels_g.size()) \
-                      + torch.where(torch.rand(predicted_labels_g.size()) > 1 - self.label_noise, 1, 0))
+            torch.abs(self.label_smoothing * torch.randn(predicted_labels_g.size(), device=self.device) \
+                      + torch.where(torch.rand(predicted_labels_g.size(), device=self.device) > 1 - self.label_noise, 1, 0))
         ) # fool the discriminator
         discriminator_loss_generated = torch.nn.functional.binary_cross_entropy(
             predicted_labels_d,
-            torch.abs(self.label_smoothing * torch.randn(predicted_labels_d.size())  \
-                      + torch.where(torch.rand(predicted_labels_d.size()) > 1 - self.label_noise, 0, 1))
+            torch.abs(self.label_smoothing * torch.randn(predicted_labels_d.size(), device=self.device)  \
+                      + torch.where(torch.rand(predicted_labels_d.size(), device=self.device) > 1 - self.label_noise, 0, 1))
         ) # identify generated images
         discriminator_loss_real = torch.nn.functional.binary_cross_entropy(
             predicted_labels_r,
-            torch.abs(self.label_smoothing * torch.randn(predicted_labels_r.size())  \
-                      + torch.where(torch.rand(predicted_labels_r.size()) > 1 - self.label_noise, 1, 0))
+            torch.abs(self.label_smoothing * torch.randn(predicted_labels_r.size(), device=self.device)  \
+                      + torch.where(torch.rand(predicted_labels_r.size(), device=self.device) > 1 - self.label_noise, 1, 0))
         ) # identify real images
         discriminator_loss = (discriminator_loss_generated + discriminator_loss_real) / 2
         return {"g_loss" : generator_loss, "d_loss" : discriminator_loss}

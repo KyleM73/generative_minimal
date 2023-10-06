@@ -54,11 +54,8 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
                                             shuffle=False, num_workers=2, pin_memory=True)
     
-    kld_weight_train = 1/len(trainloader)
-    kld_weight_test = 1/len(testloader)
-    
     # define network
-    net = GAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes).to(DEVICE)
+    net = GAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE).to(DEVICE)
     optimizer_G = torch.optim.Adam(net.generator.parameters(), lr=3e-4)
     optimizer_D = torch.optim.Adam(net.discriminator.parameters(), lr=3e-4)
 
@@ -116,5 +113,5 @@ if __name__ == "__main__":
         print()
 
     labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)]).view(-1)
-    imgs = net.cpu().sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels))
-    imshow(torchvision.utils.make_grid(imgs, nrow=n_classes))
+    imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels.to(DEVICE)))
+    imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
