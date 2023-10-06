@@ -74,8 +74,7 @@ if __name__ == "__main__":
             one_hot_labels = torch.nn.functional.one_hot(labels)
             for param in net.parameters():
                 param.grad = None
-            z = torch.randn((batch_size, latent_dim))
-            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(z, data=inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
+            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(predicted_labels_g, predicted_labels_d, predicted_labels_r)
             loss_dict["g_loss"].backward()
             optimizer_G.step()
@@ -104,8 +103,7 @@ if __name__ == "__main__":
         for i, data in enumerate(testloader, start=0):
             inputs, labels = data
             one_hot_labels = torch.nn.functional.one_hot(labels)
-            z = torch.randn((batch_size, latent_dim))
-            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(z, data=inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
+            generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs.to(DEVICE), context=one_hot_labels.to(DEVICE))
             loss_dict = net.loss(predicted_labels_g, predicted_labels_d, predicted_labels_r)
 
             running_loss_G += loss_dict["g_loss"].detach()

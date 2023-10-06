@@ -29,7 +29,7 @@ class GAN(torch.nn.Module):
             generator_layers.extend(self.make_block(hidden_dims[i], hidden_dims[i+1]))
         generator_layers.append(torch.nn.Linear(hidden_dims[-1], in_channels * in_size**2))
         generator_layers.append(torch.nn.Tanh())
-        generator_layers.append(torch.nn.Unflatten(1, (in_size, in_size, in_channels)))
+        generator_layers.append(torch.nn.Unflatten(1, (in_channels, in_size, in_size)))
 
         self.generator = torch.nn.Sequential(*generator_layers)
         self.generator.apply(self.init_weights)
@@ -59,10 +59,10 @@ class GAN(torch.nn.Module):
         return layers
     
     def forward(self, input: torch.Tensor, **kwargs) -> List[torch.Tensor]:
-        generated_imgs = self.generator(input)
+        generated_imgs = self.sample(input.size(0))
         predicted_labels_g = self.discriminator(generated_imgs)
         predicted_labels_d = self.discriminator(generated_imgs.detach())
-        predicted_labels_r = self.discriminator(kwargs["data"])
+        predicted_labels_r = self.discriminator(input)
         return [generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r]
     
     def sample(self, batch_size, **kwargs) -> torch.Tensor:
