@@ -1,1 +1,1 @@
-import models
+import generative_minimal.models

@@ -1,2 +1,2 @@
-from models.vae.vae import VAE
-from models.vae.cvae import CVAE
+from generative_minimal.models.vae.vae import VAE
+from generative_minimal.models.vae.cvae import CVAE
