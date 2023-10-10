@@ -45,7 +45,6 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, start=0):
             data = [d.to(DEVICE) for d in data]
             inputs, labels = data
-            one_hot_labels = torch.nn.functional.one_hot(labels)
 
             for param in net.discriminator.parameters():
                 param.grad = None
@@ -91,7 +90,6 @@ if __name__ == "__main__":
         for i, data in enumerate(testloader, start=0):
             data = [d.to(DEVICE) for d in data]
             inputs, labels = data
-            one_hot_labels = torch.nn.functional.one_hot(labels)
 
             predicted_labels_real = net.discriminate(inputs)
             discrimminator_loss_real = net.calculate_loss(predicted_labels_real, torch.ones_like(predicted_labels_real, device=DEVICE))
@@ -112,5 +110,5 @@ if __name__ == "__main__":
         print()
 
     labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)], device=DEVICE).view(-1)
-    imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels))
+    imgs = net.sample(batch_size=n_classes**2)
     utils.imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
