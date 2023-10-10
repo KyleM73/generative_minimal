@@ -76,6 +76,22 @@ class GAN(torch.nn.Module):
     def loss(self, predicted_labels_g: torch.Tensor, predicted_labels_d: torch.Tensor, predicted_labels_r: torch.Tensor) -> dict:
         generator_loss = torch.nn.functional.binary_cross_entropy(
             predicted_labels_g,
+            torch.ones_like(predicted_labels_g, device=self.device)
+        ) # fool the discriminator
+        discriminator_loss_generated = torch.nn.functional.binary_cross_entropy(
+            predicted_labels_d,
+            torch.zeros_like(predicted_labels_d, device=self.device)
+        ) # identify generated images
+        discriminator_loss_real = torch.nn.functional.binary_cross_entropy(
+            predicted_labels_r,
+            torch.ones_like(predicted_labels_r, device=self.device)
+        ) # identify real images
+        discriminator_loss = (discriminator_loss_generated + discriminator_loss_real) / 2
+        return {"g_loss" : generator_loss, "d_loss" : discriminator_loss}
+    
+    def loss_with_noise(self, predicted_labels_g: torch.Tensor, predicted_labels_d: torch.Tensor, predicted_labels_r: torch.Tensor) -> dict:
+        generator_loss = torch.nn.functional.binary_cross_entropy(
+            predicted_labels_g,
             torch.abs(self.label_smoothing * torch.randn(predicted_labels_g.size(), device=self.device) \
                       + torch.where(torch.rand(predicted_labels_g.size(), device=self.device) > 1 - self.label_noise, 1, 0))
         ) # fool the discriminator
