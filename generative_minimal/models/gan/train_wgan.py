@@ -5,7 +5,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always s
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True # enables cuDNN auto-tuner
 torch.manual_seed(0)
 
-from generative_minimal.models import WGAN, WDCGAN
+from generative_minimal.models import GAN, DCGAN
 from generative_minimal import utils
 
 if __name__ == "__main__":
@@ -23,6 +23,8 @@ if __name__ == "__main__":
     latent_dim = 128
     epochs = 100
     batch_size = 64
+    clip_value = 0.01
+    n_critic = 5
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
@@ -32,8 +34,8 @@ if __name__ == "__main__":
     
     # define network
     net = DCGAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE)
-    optimizer_G = torch.optim.Adam(net.generator.parameters(), lr=2e-4, betas=(0.5, 0.999))
-    optimizer_D = torch.optim.Adam(net.discriminator.parameters(), lr=2e-4, betas=(0.5, 0.999))
+    optimizer_G = torch.optim.RMSprop(net.generator.parameters(), lr=5e-5)
+    optimizer_D = torch.optim.RMSprop(net.discriminator.parameters(), lr=5e-5)
 
     print(net)
     print()
@@ -45,66 +47,59 @@ if __name__ == "__main__":
         for i, data in enumerate(trainloader, start=0):
             data = [d.to(DEVICE) for d in data]
             inputs, labels = data
-            one_hot_labels = torch.nn.functional.one_hot(labels)
 
             for param in net.discriminator.parameters():
                 param.grad = None
 
-            predicted_labels_real = net.discriminate(inputs)
-            discrimminator_loss_real = net.calculate_loss(predicted_labels_real, torch.ones_like(predicted_labels_real, device=DEVICE))
-            discrimminator_loss_real.backward()
-
-            generated_images = net.sample(batch_size=inputs.size(0))
-            predicted_labels_generated = net.discriminate(generated_images.detach())
-            discrimminator_loss_generated = net.calculate_loss(predicted_labels_generated, torch.zeros_like(predicted_labels_generated, device=DEVICE))
-            discrimminator_loss_generated.backward()
+            generated_images = net.sample(batch_size=inputs.size(0)).detach()
+            discrimminator_loss = -torch.mean(net.discriminate(inputs)) + torch.mean(net.discriminate(generated_images))
+            discrimminator_loss.backward()
 
             optimizer_D.step()
 
-            for param in net.generator.parameters():
-                param.grad = None
+            for param in net.discriminator.parameters():
+                param.data.clamp_(-clip_value, clip_value)
 
-            predicted_labels_generated = net.discriminate(generated_images)
-            generator_loss = net.calculate_loss(predicted_labels_generated, torch.ones_like(predicted_labels_generated, device=DEVICE))
-            generator_loss.backward()
+            if i % n_critic == 0:
+                for param in net.generator.parameters():
+                    param.grad = None
 
-            optimizer_G.step()
+                generated_images = net.sample(batch_size=inputs.size(0))
+                generator_loss = -torch.mean(net.discriminate(generated_images))
+                generator_loss.backward()
 
-            running_loss_G += generator_loss.detach()
-            running_loss_D += discrimminator_loss_generated.detach() + discrimminator_loss_real.detach()
+                optimizer_G.step()
+
+                running_loss_G += generator_loss.detach()
+            running_loss_D += discrimminator_loss.detach()
 
             if (i/len(trainloader)*100 % 10) < 0.1:
                 print(
                     "[{epoch}, {batch}%] generator loss: {g_loss} discriminator loss: {d_loss}"
-                    .format(epoch=epoch+1,batch=int(i/len(trainloader)*100),g_loss=generator_loss.detach(),d_loss=discrimminator_loss_generated.detach() + discrimminator_loss_real.detach())
+                    .format(epoch=epoch+1,batch=int(i/len(trainloader)*100),g_loss=generator_loss.detach(),d_loss=discrimminator_loss.detach())
                 )
         print(
             "[{epoch}, {batch}%] generator loss: {g_loss} discriminator loss: {d_loss}"
-            .format(epoch=epoch+1,batch=100,g_loss=generator_loss.detach(),d_loss=discrimminator_loss_generated.detach() + discrimminator_loss_real.detach())
+            .format(epoch=epoch+1,batch=100,g_loss=generator_loss.detach(),d_loss=discrimminator_loss.detach())
         )
         print(
             "[{epoch}, train] generator loss: {g_loss} discriminator loss {d_loss}"
-            .format(epoch=epoch+1,g_loss=running_loss_G/(i+1),d_loss=running_loss_D/(i+1))
+            .format(epoch=epoch+1,g_loss=n_critic*running_loss_G/(i+1),d_loss=running_loss_D/(i+1))
         )
         net.eval()
         running_loss_G, running_loss_D = 0, 0
         for i, data in enumerate(testloader, start=0):
             data = [d.to(DEVICE) for d in data]
             inputs, labels = data
-            one_hot_labels = torch.nn.functional.one_hot(labels)
 
-            predicted_labels_real = net.discriminate(inputs)
-            discrimminator_loss_real = net.calculate_loss(predicted_labels_real, torch.ones_like(predicted_labels_real, device=DEVICE))
+            generated_images = net.sample(batch_size=inputs.size(0)).detach()
+            discrimminator_loss = -torch.mean(net.discriminate(inputs)) + torch.mean(net.discriminate(generated_images))
 
             generated_images = net.sample(batch_size=inputs.size(0))
-            predicted_labels_generated = net.discriminate(generated_images.detach())
-            discrimminator_loss_generated = net.calculate_loss(predicted_labels_generated, torch.zeros_like(predicted_labels_generated, device=DEVICE))
-
-            predicted_labels_generated = net.discriminate(generated_images)
-            generator_loss = net.calculate_loss(predicted_labels_generated, torch.ones_like(predicted_labels_generated, device=DEVICE))
+            generator_loss = -torch.mean(net.discriminate(generated_images))
 
             running_loss_G += generator_loss.detach()
-            running_loss_D += discrimminator_loss_generated.detach() + discrimminator_loss_real.detach()
+            running_loss_D += discrimminator_loss.detach()
         print(
             "[{epoch}, test] generator loss: {g_loss} discriminator loss: {d_loss}"
             .format(epoch=epoch+1,g_loss=running_loss_G/(i+1),d_loss=running_loss_D/(i+1))
@@ -112,5 +107,5 @@ if __name__ == "__main__":
         print()
 
     labels = torch.tensor([[i for _ in range(n_classes)] for i in range(n_classes)], device=DEVICE).view(-1)
-    imgs = net.sample(batch_size=n_classes**2, context=torch.nn.functional.one_hot(labels))
+    imgs = net.sample(batch_size=n_classes**2)
     utils.imshow(torchvision.utils.make_grid(imgs.to("cpu"), nrow=n_classes))
