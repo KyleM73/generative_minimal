@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                             shuffle=False, num_workers=2, pin_memory=True)
     
     # define network
-    net = DCGAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE)
+    net = GAN(in_size=in_size, in_channels=in_channels, latent_dim=latent_dim, context_dim=n_classes, device=DEVICE)
     optimizer_G = torch.optim.RMSprop(net.generator.parameters(), lr=5e-5)
     optimizer_D = torch.optim.RMSprop(net.discriminator.parameters(), lr=5e-5)
 
