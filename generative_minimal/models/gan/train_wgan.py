@@ -5,6 +5,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always s
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True # enables cuDNN auto-tuner
 torch.manual_seed(0)
 
+from generative_minimal import ROOT_DIR
 from generative_minimal.models import GAN, DCGAN
 from generative_minimal import utils
 
@@ -14,8 +15,8 @@ if __name__ == "__main__":
         torchvision.transforms.ToTensor(), # from PIL.Image.Image to torch.Tensor
         torchvision.transforms.Normalize((0.5), (0.5)), # from [0,1] to [-1,1]
         ]) 
-    trainset = torchvision.datasets.MNIST(root="./data", train=True, download=False, transform=transform) # 60k
-    testset = torchvision.datasets.MNIST(root="./data", train=False, download=False, transform=transform) # 10k
+    trainset = torchvision.datasets.MNIST(root="{}/data".format(ROOT_DIR), train=True, download=False, transform=transform) # 60k
+    testset = torchvision.datasets.MNIST(root="{}/data".format(ROOT_DIR), train=False, download=False, transform=transform) # 10k
     classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
     n_classes = len(classes)
     in_channels = 1

@@ -26,4 +26,5 @@ each model class contains a `train.py` script to train the associated model
 - `cd generative_minimal`
 - `pip install -e .`
 - `cd generative_minimal`
+- `python get_datasets.py`
 - `python models/<model>/train.py`
