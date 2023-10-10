@@ -46,7 +46,9 @@ if __name__ == "__main__":
             data = [d.to(DEVICE) for d in data]
             inputs, labels = data
             one_hot_labels = torch.nn.functional.one_hot(labels)
-            for param in net.parameters():
+            for param in net.generator.parameters():
+                param.grad = None
+            for param in net.discriminator.parameters():
                 param.grad = None
             generated_imgs, predicted_labels_g, predicted_labels_d, predicted_labels_r = net(inputs, context=one_hot_labels)
             loss_dict = net.loss(predicted_labels_g, predicted_labels_d, predicted_labels_r)
