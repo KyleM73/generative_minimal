@@ -2,7 +2,7 @@ from typing import Any, Callable, List
 
 import torch
 
-class DCGAN(torch.nn.Module):
+class WDCGAN(torch.nn.Module):
     def __init__(self, 
                  in_size: int, 
                  in_channels: int, 
@@ -11,7 +11,7 @@ class DCGAN(torch.nn.Module):
                  activation_func: Callable = torch.nn.LeakyReLU,
                  **kwargs
                  ) -> None:
-        super(DCGAN, self).__init__()
+        super(WDCGAN, self).__init__()
 
         self.in_channels = in_channels
         self.latent_dim = latent_dim

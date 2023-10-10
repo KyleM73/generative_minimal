@@ -5,7 +5,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu" # mps is almost always s
 if DEVICE == "cuda": torch.backends.cudnn.benchmark = True # enables cuDNN auto-tuner
 torch.manual_seed(0)
 
-from generative_minimal.models import GAN, DCGAN
+from generative_minimal.models import WGAN, WDCGAN
 from generative_minimal import utils
 
 if __name__ == "__main__":
