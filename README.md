@@ -20,6 +20,8 @@ each model class contains a `train.py` script to train the associated model
     - Decoder-only
     - Encoder-Decoder
 
+feel free to submit an issue or a pull request with additional models following the same format used here
+
 # Setup
 - `conda create -n generative -y python=3.11 && conda activate generative`
 - `git clone git@github.com:KyleM73/generative_minimal.git`
@@ -28,3 +30,6 @@ each model class contains a `train.py` script to train the associated model
 - `cd generative_minimal`
 - `python get_datasets.py`
 - `python models/<model>/train.py`
+
+# Datasets
+- MNIST
