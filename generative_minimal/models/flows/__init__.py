@@ -1,0 +1,1 @@
+from generative_minimal.models.flows.flow import NormalizingFlow
