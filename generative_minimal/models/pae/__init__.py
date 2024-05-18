@@ -1,0 +1,1 @@
+from generative_minimal.models.pae.pae import PAE
