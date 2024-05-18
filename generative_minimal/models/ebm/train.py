@@ -18,7 +18,7 @@ if __name__ == "__main__":
         "epochs" : 10000,
         "batch_size" : 200,
         "n_steps" : 20,
-        "step_size" : 1,
+        "step_size" : 0.5,
         "noise_scale" : 1.0,
         "alpha" : 1,
         "learning_rate" : 2e-4,

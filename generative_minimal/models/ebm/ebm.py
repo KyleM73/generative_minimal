@@ -60,7 +60,7 @@ class EBM(torch.nn.Module):
             noise = torch.randn_like(inputs_neg, device=self.device) * self.noise_scale
             energy_neg = self.forward(inputs_neg)
             grad = torch.autograd.grad(energy_neg.sum(), inputs_neg, only_inputs=True)[0]
-            inputs_neg = inputs_neg + self.step_size * grad + noise
+            inputs_neg = inputs_neg - self.step_size * grad + noise
         return inputs_neg.detach()
     
     def loss(self, energy_pos: torch.Tensor, energy_neg: torch.Tensor) -> torch.Tensor:
