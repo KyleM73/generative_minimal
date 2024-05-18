@@ -1,0 +1,1 @@
+from generative_minimal.models.ebm.ebm import EBM
