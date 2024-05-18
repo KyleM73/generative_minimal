@@ -104,5 +104,5 @@ if __name__ == "__main__":
             for c in range(4):
                 sample_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = samples[c+4*r]
 
-        wandb.log({"loss": running_loss/(i+1), "samples" : wandb.Image(sample_grid.numpy())})
+        wandb.log({"loss": running_loss/(i+1), "samples" : wandb.Image(sample_grid.cpu().numpy())})
     wandb.finish()
