@@ -64,5 +64,5 @@ class EBM(torch.nn.Module):
         return inputs_neg.detach()
     
     def loss(self, energy_pos: torch.Tensor, energy_neg: torch.Tensor) -> torch.Tensor:
-        loss = (energy_pos - energy_neg) + self.alpha * (energy_pos ** 2 + energy_neg ** 2)
-        return loss.mean()
+        loss = (energy_pos.mean() - energy_neg.mean()) + self.alpha * ((energy_pos ** 2).mean() + (energy_neg ** 2).mean())
+        return loss
