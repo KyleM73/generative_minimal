@@ -66,7 +66,7 @@ if __name__ == "__main__":
         net.train()
         running_loss = 0
         for i, data in enumerate(trainloader, start=0):
-            if torch.rand(1) < cfg["buffer_sample_rate"] and epoch > 1:
+            if torch.rand(1) > cfg["buffer_sample_rate"] and epoch > 1:
                 inputs_pos = pos_buffer[i]
                 inputs_neg = neg_buffer[i]
             else:
