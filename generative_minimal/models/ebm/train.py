@@ -16,7 +16,7 @@ if __name__ == "__main__":
         "in_channels" : 1,
         "in_size" : 28,
         "epochs" : 100,
-        "batch_size" : 200,
+        "batch_size" : 600,
         "n_steps" : 100,
         "step_size" : 0.1,
         "noise_scale" : 0.5,
@@ -25,6 +25,8 @@ if __name__ == "__main__":
         "dataset" : "MNIST",
         "architecture" : "CNN",
         "hidden_dims" : [4, 8, 16],
+        "buffer_size" : 100,
+        "buffer_sample_rate" : 0.05,
     }
 
     wandb.init(
@@ -54,25 +56,35 @@ if __name__ == "__main__":
     net = EBM(cfg["in_size"], cfg["in_channels"], cfg["noise_scale"], cfg["step_size"], cfg["alpha"], cfg["hidden_dims"], device=DEVICE)
     optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])
 
-    wandb.watch(net, log_freq=10)
+    wandb.watch(net, log_freq=1)
 
     print(net)
     print()
+
+    pos_buffer = torch.zeros(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE)
+    neg_buffer = torch.zeros(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE)
 
     # train network
     for epoch in range(cfg["epochs"]):
         net.train()
         running_loss = 0
         for i, data in enumerate(trainloader, start=0):
-            data = [d.to(DEVICE) for d in data]
-            inputs_pos, labels = data
-            inputs_neg = torch.randn_like(inputs_pos, requires_grad=True, device=DEVICE)
-            #one_hot_labels = torch.nn.functional.one_hot(labels)
+            if torch.rand(1) < cfg["buffer_sample_rate"] and epoch > 1:
+                inputs_pos = pos_buffer[i]
+                inputs_neg = neg_buffer[i]
+            else:
+                data = [d.to(DEVICE) for d in data]
+                inputs_pos, labels = data
+                inputs_neg = torch.randn_like(inputs_pos, requires_grad=True, device=DEVICE)
+                #one_hot_labels = torch.nn.functional.one_hot(labels)
             for param in net.parameters():
                 param.grad = None
             
             # langevin dynamics
             inputs_neg = net.sample(inputs_neg, cfg["n_steps"])
+
+            pos_buffer[i] = inputs_pos
+            neg_buffer[i] = inputs_neg
         
             optimizer.zero_grad()
             energy_pos = net(inputs_pos)
@@ -85,6 +97,7 @@ if __name__ == "__main__":
             optimizer.step()
 
             running_loss += loss.item()
+            wandb.log({"loss": loss.item()})
 
             if (i/len(trainloader)*100 % 10) < 0.1:
                 print(
@@ -104,5 +117,5 @@ if __name__ == "__main__":
             for c in range(4):
                 sample_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = samples[c+4*r]
 
-        wandb.log({"loss": running_loss/(i+1), "samples" : wandb.Image(sample_grid.cpu().numpy())})
+        wandb.log({"samples" : wandb.Image(sample_grid.cpu().numpy())})
     wandb.finish()
