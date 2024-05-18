@@ -97,7 +97,7 @@ if __name__ == "__main__":
             "[{epoch}] loss: {loss}".format(epoch=epoch+1,loss=running_loss/(i+1))
         )
         # get samples for eval
-        input = torch.randn_like(16, cfg["in_size"], cfg["in_size"], requires_grad=True, device=DEVICE)
+        input = torch.randn(16, cfg["in_size"], cfg["in_size"], requires_grad=True, device=DEVICE)
         samples = net.sample(input, cfg["n_steps"])
         sample_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
         for r in range(4):
