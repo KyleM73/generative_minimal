@@ -15,17 +15,17 @@ if __name__ == "__main__":
     cfg = {
         "in_channels" : 1,
         "in_size" : 28,
-        "epochs" : 100,
-        "batch_size" : 600,
-        "n_steps" : 100,
-        "step_size" : 0.1,
-        "noise_scale" : 0.5,
+        "epochs" : 10000,
+        "batch_size" : 200,
+        "n_steps" : 20,
+        "step_size" : 1,
+        "noise_scale" : 1.0,
         "alpha" : 1,
-        "learning_rate" : 1e-3,
+        "learning_rate" : 2e-4,
         "dataset" : "MNIST",
         "architecture" : "CNN",
-        "hidden_dims" : [4, 8, 16],
-        "buffer_size" : 100,
+        "hidden_dims" : [64, 64, 64],
+        "buffer_size" : 300,
         "buffer_sample_rate" : 0.05,
     }
 
@@ -42,15 +42,12 @@ if __name__ == "__main__":
         torchvision.transforms.Normalize((0.5), (0.5)), # from [0,1] to [-1,1]
         ]) 
     trainset = torchvision.datasets.MNIST(root="{}/data".format(ROOT_DIR), train=True, download=False, transform=transform) # 60k
-    testset = torchvision.datasets.MNIST(root="{}/data".format(ROOT_DIR), train=False, download=False, transform=transform) # 10k
     classes = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
     n_classes = len(classes)
 
     # make dataset
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=cfg["batch_size"],
-                                            shuffle=True, num_workers=2, pin_memory=True)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=cfg["batch_size"],
-                                            shuffle=False, num_workers=2, pin_memory=True)
+                                            shuffle=True, num_workers=4, pin_memory=True)
     
     # define network
     net = EBM(cfg["in_size"], cfg["in_channels"], cfg["noise_scale"], cfg["step_size"], cfg["alpha"], cfg["hidden_dims"], device=DEVICE)
@@ -77,8 +74,8 @@ if __name__ == "__main__":
                 inputs_pos, labels = data
                 inputs_neg = torch.randn_like(inputs_pos, requires_grad=True, device=DEVICE)
                 #one_hot_labels = torch.nn.functional.one_hot(labels)
-            for param in net.parameters():
-                param.grad = None
+            #for param in net.parameters():
+            #    param.grad = None
             
             # langevin dynamics
             inputs_neg = net.sample(inputs_neg.requires_grad_(True), cfg["n_steps"])
@@ -97,7 +94,6 @@ if __name__ == "__main__":
             optimizer.step()
 
             running_loss += loss.item()
-            wandb.log({"loss": loss.item()})
 
             if (i/len(trainloader)*100 % 10) < 0.1:
                 print(
@@ -117,5 +113,5 @@ if __name__ == "__main__":
             for c in range(4):
                 sample_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = samples[c+4*r]
 
-        wandb.log({"samples" : wandb.Image(sample_grid.cpu().numpy())})
+        wandb.log({"loss": running_loss/(i+1), "samples" : wandb.Image(sample_grid.cpu().numpy())})
     wandb.finish()
