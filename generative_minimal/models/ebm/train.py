@@ -81,7 +81,7 @@ if __name__ == "__main__":
                 param.grad = None
             
             # langevin dynamics
-            inputs_neg = net.sample(inputs_neg, cfg["n_steps"])
+            inputs_neg = net.sample(inputs_neg.requires_grad_(True), cfg["n_steps"])
 
             pos_buffer[i] = inputs_pos
             neg_buffer[i] = inputs_neg
