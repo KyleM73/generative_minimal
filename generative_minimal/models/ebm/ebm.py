@@ -59,7 +59,7 @@ class EBM(torch.nn.Module):
         for _ in range(n_steps):
             noise = torch.randn_like(inputs_neg, device=self.device) * self.noise_scale
             energy_neg = self.forward(inputs_neg)
-            grad = torch.autograd.grad(energy_neg.sum(), inputs_neg, only_inputs=True)[0]
+            grad = torch.autograd.grad(energy_neg.sum(), inputs_neg)[0]
             inputs_neg = inputs_neg - self.step_size * grad + noise
         return inputs_neg.detach()
     
