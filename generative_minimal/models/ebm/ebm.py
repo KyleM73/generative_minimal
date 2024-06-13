@@ -6,19 +6,21 @@ from generative_minimal import utils
 
 class EBM(torch.nn.Module):
     def __init__(self, 
-                 in_size: int, 
-                 in_channels: int, 
-                 noise_scale: float,
-                 step_size: float,
-                 alpha: float,
+                 in_size: int = 28, 
+                 in_channels: int = 1, 
+                 noise_scale: float = 0.005,
+                 grad_clip: float = 0.03,
+                 step_size: float = 10,
+                 alpha: float = 0.1,
                  hidden_dims: List = None, 
-                 activation_func: Callable = torch.nn.GELU,
+                 activation_func: Callable = torch.nn.SiLU,
                  **kwargs
                  ) -> None:
         super(EBM, self).__init__()
 
         self.in_channels = in_channels
         self.noise_scale = noise_scale
+        self.grad_clip = grad_clip
         self.step_size = step_size
         self.alpha = alpha
         if hidden_dims is None:
@@ -55,14 +57,50 @@ class EBM(torch.nn.Module):
     def forward(self, input: torch.Tensor, **kwargs) -> List[torch.Tensor]:
         return self.energy(self.encoder(input))
     
-    def sample(self, inputs_neg: torch.Tensor, n_steps: int) -> torch.Tensor:
+    def generate_samples(self, sample: torch.Tensor, n_steps: int = 60, save_intermediate_samples: bool = False) -> torch.Tensor:
+        train_status = self.training
+        self.eval()
+        for p in self.parameters():
+            p.requires_grad = False
+        sample.requires_grad = True
+
+        gradients_status = torch.is_grad_enabled()
+        torch.set_grad_enabled(True)
+
+        noise = torch.randn_like(sample, device=self.device)
+        if save_intermediate_samples: samples = []
+        
         for _ in range(n_steps):
-            noise = torch.randn_like(inputs_neg, device=self.device) * self.noise_scale
-            energy_neg = self.forward(inputs_neg)
-            grad = torch.autograd.grad(energy_neg.sum(), inputs_neg)[0]
-            inputs_neg = inputs_neg - self.step_size * grad + noise
-        return inputs_neg.detach()
+            noise.normal_(0, self.noise_scale)
+            sample.data.add_(noise.data)
+            sample.data.clamp_(min=-1.0, max=1.0)
+
+            sample_energy = self.forward(sample)
+            sample_energy.sum().backward()
+            sample.grad.data.clamp_(-self.grad_clip, self.grad_clip)
+
+            sample.data.add_(-self.step_size * sample.grad.data)
+            sample.grad.detach_()
+            sample.grad.zero_()
+            sample.data.clamp_(min=-1.0, max=1.0)
+
+            if save_intermediate_samples:
+                samples.append(sample.clone().detach())
+        
+        for p in self.parameters():
+            p.requires_grad = True
+        self.train(train_status)
+        torch.set_grad_enabled(gradients_status)
+
+        if save_intermediate_samples:
+            return torch.cat(samples, dim=0)
+        else:
+            return sample
     
-    def loss(self, energy_pos: torch.Tensor, energy_neg: torch.Tensor) -> torch.Tensor:
-        loss = (energy_pos.mean() - energy_neg.mean()) + self.alpha * ((energy_pos ** 2).mean() + (energy_neg ** 2).mean())
-        return loss
+    def loss(self, energy_data: torch.Tensor, energy_samples: torch.Tensor) -> List[torch.Tensor]:
+        # note: energy is inverted i.e. net(x) = -E(x)
+        # loss = contrastive divergence + regularization
+        loss_cd = -energy_data.mean() + energy_samples.mean()
+        loss_reg = self.alpha * (energy_data ** 2 + energy_samples ** 2).mean()
+        loss = loss_cd + loss_reg
+        return [loss, loss_cd, loss_reg]
