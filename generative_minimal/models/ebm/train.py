@@ -53,7 +53,7 @@ if __name__ == "__main__":
     
     # define network
     net = EBM(cfg["in_size"], cfg["in_channels"], cfg["noise_scale"], cfg["grad_clip"], cfg["step_size"], cfg["alpha"], cfg["hidden_dims"], device=DEVICE)
-    optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"], betas=(0, 0.999))
+    optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])#, betas=(0, 0.999))
 
     wandb.watch(net, log="all", log_freq=1)
 
@@ -139,6 +139,11 @@ if __name__ == "__main__":
             for c in range(4):
                 buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, c+4*r]
 
+        data_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
+        for r in range(4):
+            for c in range(4):
+                data_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = data[c+4*r]
+
         wandb.log({
             "Loss/loss": running_loss/(i+1),
             "Loss/contrastive divergence loss": running_loss_cd/(i+1),
@@ -146,6 +151,7 @@ if __name__ == "__main__":
             "Energy/data" : running_energy_data/(i+1),
             "Energy/samples" : running_energy_samples/(i+1),
             "Images/samples" : wandb.Image(sample_grid.cpu().numpy()),
-            "Images/buffer" : wandb.Image(buffer_grid.cpu().numpy())
+            "Images/buffer" : wandb.Image(buffer_grid.cpu().numpy()),
+            "Images/data" : wandb.Image(data_grid.cpu().numpy()),
             })
     wandb.finish()
