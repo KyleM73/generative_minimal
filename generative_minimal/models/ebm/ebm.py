@@ -75,7 +75,7 @@ class EBM(torch.nn.Module):
             sample.data.add_(noise.data)
             sample.data.clamp_(min=-1.0, max=1.0)
 
-            sample_energy = self.forward(sample)
+            sample_energy = -self.forward(sample)
             sample_energy.sum().backward()
             sample.grad.data.clamp_(-self.grad_clip, self.grad_clip)
 
