@@ -95,12 +95,12 @@ class EBM(torch.nn.Module):
         if save_intermediate_samples:
             return torch.cat(samples, dim=0)
         else:
-            return sample
+            return sample.detach()
     
     def loss(self, energy_data: torch.Tensor, energy_samples: torch.Tensor) -> List[torch.Tensor]:
         # note: energy is inverted i.e. net(x) = -E(x)
         # loss = contrastive divergence + regularization
-        loss_cd = -energy_data.mean() + energy_samples.mean()
+        loss_cd = energy_data.mean() - energy_samples.mean()
         loss_reg = self.alpha * (energy_data ** 2 + energy_samples ** 2).mean()
         loss = loss_cd + loss_reg
-        return [loss, loss_cd, loss_reg]
+        return [loss, loss_cd.detach(), loss_reg.detach()]
