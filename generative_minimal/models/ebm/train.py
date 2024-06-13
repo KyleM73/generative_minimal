@@ -60,7 +60,7 @@ if __name__ == "__main__":
     print(net)
     print()
 
-    #data_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
+    data_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
     sample_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
     buffer_sample_distribution =  torch.distributions.binomial.Binomial(cfg["batch_size"], cfg["buffer_sample_rate"])
 
@@ -76,28 +76,18 @@ if __name__ == "__main__":
             num_new_samples = buffer_sample_distribution.sample().to(int).item()
             random_samples = torch.rand(num_new_samples, cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
             buffer_samples = sample_buffer[i, :cfg["batch_size"] - num_new_samples]
-            #buffer_data = data_buffer[i, :cfg["batch_size"] - num_new_samples]
+            buffer_data = data_buffer[i, :cfg["batch_size"] - num_new_samples]
 
             samples = torch.cat([buffer_samples, random_samples], dim=0).detach().to(DEVICE)
             data, _ = [d.to(DEVICE) for d in data_batch]
+            data = torch.cat([buffer_data, data[:num_new_samples]], dim=0).detach().to(DEVICE)
             small_noise = torch.randn_like(data) * cfg["noise_scale"]
             data.add_(small_noise).clamp_(min=-1.0, max=1.0)
-            #data = torch.cat([data, old_data], dim=0).detach().to(DEVICE)
-            #if torch.rand(1) > cfg["buffer_sample_rate"] and epoch > 1:
-            #    inputs_pos = data_buffer[i]
-            #    inputs_neg = sample_buffer[i]
-            #else:
-            #    data = [d.to(DEVICE) for d in data]
-            #    inputs_pos, labels = data
-            #    inputs_neg = torch.randn_like(inputs_pos, requires_grad=True, device=DEVICE)
-            #    one_hot_labels = torch.nn.functional.one_hot(labels)
-            #for param in net.parameters():
-            #    param.grad = None
             
             # langevin dynamics
             samples = net.generate_samples(samples, cfg["n_steps"])
 
-            #data_buffer[i] = inputs_pos
+            data_buffer[i] = data
             sample_buffer[i] = samples
         
             optimizer.zero_grad()
@@ -139,10 +129,10 @@ if __name__ == "__main__":
             for c in range(4):
                 buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, c+4*r]
 
-        data_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
-        for r in range(4):
-            for c in range(4):
-                data_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = data[c+4*r]
+        #data_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
+        #for r in range(4):
+        #    for c in range(4):
+        #        data_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = data[c+4*r]
 
         wandb.log({
             "Loss/loss": running_loss/(i+1),
@@ -152,6 +142,6 @@ if __name__ == "__main__":
             "Energy/samples" : running_energy_samples/(i+1),
             "Images/samples" : wandb.Image(sample_grid.cpu().numpy()),
             "Images/buffer" : wandb.Image(buffer_grid.cpu().numpy()),
-            "Images/data" : wandb.Image(data_grid.cpu().numpy()),
+            #"Images/data" : wandb.Image(data_grid.cpu().numpy()),
             })
     wandb.finish()
