@@ -44,7 +44,7 @@ class EBM(torch.nn.Module):
         self.encoder = torch.nn.Sequential(*encoder_layers)
         self.encoder.apply(self.init_weights)
 
-        self.enc_size = utils.get_encoder_size(in_size, hidden_dims, kernel=3, stride=1, padding=1)
+        self.enc_size = utils.get_encoder_size(in_size, hidden_dims, kernel=3, stride=2, padding=1)
 
         self.energy = torch.nn.Linear(hidden_dims[-1] * self.enc_size**2, 1, device=self.device)
         self.energy.apply(self.init_weights)
