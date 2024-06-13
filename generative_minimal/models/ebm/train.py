@@ -113,8 +113,8 @@ if __name__ == "__main__":
             running_loss += loss.item()
             running_loss_cd += loss_cd.item()
             running_loss_reg += loss_reg.item()
-            running_energy_data += energy_data.mean().item()
-            running_energy_samples += energy_samples.mean().item()
+            running_energy_data += -energy_data.mean().item()
+            running_energy_samples += -energy_samples.mean().item()
 
             if (i/len(trainloader)*100 % 10) < 0.1:
                 print(
