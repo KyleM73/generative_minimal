@@ -18,6 +18,7 @@ if __name__ == "__main__":
         "epochs" : 100,
         "batch_size" : 200,
         "n_steps" : 60,
+        "n_test_steps" : 500,
         "step_size" : 10,
         "noise_scale" : 0.005,
         "grad_clip" : 0.03,
@@ -118,7 +119,7 @@ if __name__ == "__main__":
         )
         # get samples for eval
         input = torch.randn(16, 1, cfg["in_size"], cfg["in_size"], requires_grad=True, device=DEVICE)
-        samples = net.generate_samples(input, cfg["n_steps"])
+        samples = net.generate_samples(input, cfg["n_test_steps"])
         sample_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
         for r in range(4):
             for c in range(4):
