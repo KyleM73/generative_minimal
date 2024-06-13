@@ -74,7 +74,7 @@ if __name__ == "__main__":
         running_energy_samples = 0
         for i, data_batch in enumerate(trainloader, start=0):
             num_new_samples = buffer_sample_distribution.sample().to(int).item()
-            random_samples = torch.rand(num_new_samples, cfg["in_channels"], cfg["in_size"], cfg["in_size"]) * 2 - 1
+            random_samples = torch.rand(num_new_samples, cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
             buffer_samples = sample_buffer[i, :cfg["batch_size"] - num_new_samples]
             #buffer_data = data_buffer[i, :cfg["batch_size"] - num_new_samples]
 
