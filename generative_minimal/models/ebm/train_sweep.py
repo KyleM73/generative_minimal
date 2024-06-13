@@ -123,13 +123,6 @@ def main():
             running_energy_data += -energy_data.mean().item()
             running_energy_samples += -energy_samples.mean().item()
 
-            if (i/len(trainloader)*100 % 10) < 0.1:
-                print(
-                    "[{epoch}, {batch}%] loss: {loss}".format(epoch=epoch+1,batch=int(i/len(trainloader)*100),loss=loss.item())
-                )
-        print(
-            "[{epoch}, {batch}%] loss: {loss}".format(epoch=epoch+1,batch=100,loss=loss.item())
-        )
         print(
             "[{epoch}] loss: {loss}".format(epoch=epoch+1,loss=running_loss/(i+1))
         )
