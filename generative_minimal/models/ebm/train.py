@@ -15,7 +15,7 @@ if __name__ == "__main__":
     cfg = {
         "in_channels" : 1,
         "in_size" : 28,
-        "epochs" : 100,
+        "epochs" : 200,
         "batch_size" : 200,
         "n_steps" : 60,
         "n_test_steps" : 500,
@@ -54,14 +54,14 @@ if __name__ == "__main__":
     
     # define network
     net = EBM(cfg["in_size"], cfg["in_channels"], cfg["noise_scale"], cfg["grad_clip"], cfg["step_size"], cfg["alpha"], cfg["hidden_dims"], device=DEVICE)
-    optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])#, betas=(0, 0.999))
+    optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])
 
     wandb.watch(net, log="all", log_freq=1)
 
     print(net)
     print()
 
-    data_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
+    #data_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
     sample_buffer = torch.rand(cfg["buffer_size"], cfg["batch_size"], cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
     buffer_sample_distribution =  torch.distributions.binomial.Binomial(cfg["batch_size"], cfg["buffer_sample_rate"])
 
@@ -77,18 +77,18 @@ if __name__ == "__main__":
             num_new_samples = buffer_sample_distribution.sample().to(int).item()
             random_samples = torch.rand(num_new_samples, cfg["in_channels"], cfg["in_size"], cfg["in_size"], device=DEVICE) * 2 - 1
             buffer_samples = sample_buffer[i, :cfg["batch_size"] - num_new_samples]
-            buffer_data = data_buffer[i, :cfg["batch_size"] - num_new_samples]
+            #buffer_data = data_buffer[i, :cfg["batch_size"] - num_new_samples]
 
             samples = torch.cat([buffer_samples, random_samples], dim=0).detach().to(DEVICE)
             data, _ = [d.to(DEVICE) for d in data_batch]
-            data = torch.cat([buffer_data, data[:num_new_samples]], dim=0).detach().to(DEVICE)
+            #data = torch.cat([buffer_data, data[:num_new_samples]], dim=0).detach().to(DEVICE)
             small_noise = torch.randn_like(data) * cfg["noise_scale"]
             data.add_(small_noise).clamp_(min=-1.0, max=1.0)
             
             # langevin dynamics
             samples = net.generate_samples(samples, cfg["n_steps"])
 
-            data_buffer[i] = data
+            #data_buffer[i] = data
             sample_buffer[i] = samples
         
             optimizer.zero_grad()
