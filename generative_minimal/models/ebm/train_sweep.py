@@ -17,7 +17,7 @@ sweep_config = {
     "run_cap" : 500, #max number of sweeps to run
     "parameters" : {
         "batch_size": {"distribution": "q_uniform", "min": 50, "max": 1000, "q": 10},
-        "epochs": {"distribution": "q_uniform", "min": 50, "max": 500, "q": 50},
+        "epochs": {"distribution": "q_uniform", "min": 100, "max": 1000, "q": 100},
         "learning_rate": {"distribution": "uniform", "max": 0.1, "min": 0.00001},
         "n_steps": {"distribution": "q_uniform", "min": 10, "max": 100, "q": 10},
         "noise_scale": {"distribution": "uniform", "max": 0.1, "min": 0.0001},
