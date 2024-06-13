@@ -26,7 +26,7 @@ if __name__ == "__main__":
         "learning_rate" : 1e-4,
         "dataset" : "MNIST",
         "architecture" : "CNN",
-        "hidden_dims" : [64, 64, 64, 64],
+        "hidden_dims" : [16, 32, 64],
         "buffer_size" : 300,
         "buffer_sample_rate" : 0.05,
     }
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         buffer_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
         for r in range(4):
             for c in range(4):
-                buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, :16]
+                buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, c+4*r]
 
         wandb.log({
             "Loss/loss": running_loss/(i+1),
