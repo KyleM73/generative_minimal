@@ -33,8 +33,8 @@ class EBM(torch.nn.Module):
         for h_dim in hidden_dims:
             encoder_layers.append(
                 torch.nn.Sequential(
-                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=1, padding=1, bias=False, device=self.device),
-                    torch.nn.BatchNorm2d(h_dim, device=self.device),
+                    torch.nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=2, padding=1, bias=False, device=self.device),
+                    #torch.nn.BatchNorm2d(h_dim, device=self.device),
                     self.activation_func()
                 )
             )

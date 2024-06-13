@@ -132,12 +132,12 @@ if __name__ == "__main__":
         sample_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
         for r in range(4):
             for c in range(4):
-                sample_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = samples[c+4*r]
+                sample_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = samples[c+4*r].detach()
 
         buffer_grid = torch.zeros(4 * cfg["in_size"], 4 * cfg["in_size"], device=DEVICE)
         for r in range(4):
             for c in range(4):
-                buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, c+4*r]
+                buffer_grid[r*cfg["in_size"]:(r+1)*cfg["in_size"], c*cfg["in_size"]:(c+1)*cfg["in_size"]] = sample_buffer[0, c+4*r].detach()
 
         wandb.log({
             "Loss/loss": running_loss/(i+1),
