@@ -20,6 +20,7 @@ sweep_config = {
         "epochs": {"distribution": "q_uniform", "min": 100, "max": 1000, "q": 100},
         "learning_rate": {"distribution": "uniform", "max": 0.1, "min": 0.00001},
         "n_steps": {"distribution": "q_uniform", "min": 10, "max": 100, "q": 10},
+        "step_size": {"distribution": "q_uniform", "max": 100, "min": 1, "q": 1},
         "noise_scale": {"distribution": "uniform", "max": 0.1, "min": 0.0001},
         "grad_clip": {"distribution": "uniform", "max": 1.0, "min": 0.001},
         "grad_norm_clip": {"distribution": "uniform", "max": 1.0, "min": 0.001},
@@ -69,7 +70,7 @@ def main():
                                             shuffle=True, num_workers=4, pin_memory=True)
     
     # define network
-    net = EBM(cfg["in_size"], cfg["in_channels"], wandb.config.noise_scale, wandb.config.grad_clip, cfg["step_size"], wandb.config.alpha, cfg["hidden_dims"], device=DEVICE)
+    net = EBM(cfg["in_size"], cfg["in_channels"], wandb.config.noise_scale, wandb.config.grad_clip, wandb.config.step_size, wandb.config.alpha, cfg["hidden_dims"], device=DEVICE)
     optimizer = torch.optim.Adam(net.parameters(), lr=wandb.config.learning_rate)
 
     wandb.watch(net, log="all", log_freq=1)
